@@ -28,18 +28,6 @@ def edge_set(tour, set_id):
         j = i
     return edges
 
-def distance(instance, i, j):
-    dx = instance[i][0] - instance[j][0]
-    dy = instance[i][1] - instance[j][1]
-    return round((dx ** 2 + dy ** 2) ** 0.5)
-def edge_cost(instance, edge):
-    return distance(instance, edge[0], edge[1])
-def edge_cost_sum(instance, edges):
-    total = 0
-    for e in edges:
-        total += edge_cost(intance, e)
-    return total
-
 def map_edges(m, edges):
     for e in edges:
         for i in e:
