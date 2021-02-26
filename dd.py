@@ -34,6 +34,7 @@ def map_edges(m, edges):
             if i not in m:
                 m[i] = set()
             m[i].add(e)
+            assert(len(m[i]) in (1, 2, 3, 4))
 
 def extract_island(m):
     """Extracts a disjoint set of edges from the provided edge map."""
@@ -89,6 +90,73 @@ def split_difference(first_exclusive, second_exclusive):
     assert(edge_count == len(first_exclusive) + len(second_exclusive))
     return islands
 
+def test_junction(m, junction):
+    """Tests junction to see if associated edges are disjoint, trivially disjoint, or indeterminate (adjacent to other junctions).
+    If disjoint or trivially disjoint, then disjoint edges are returned.
+    If indeterminate, None is returned.
+    """
+    disjoint_set = None
+    assert(len(m[junction]) == 4)
+    for e in m[junction]:
+        assert(junction in e)
+        # walk edges.
+        visited_edges = set() # this set should be a 1D walk.
+        visited_edges.add(e)
+        i = e[0] if e[1] == junction else e[1]
+        if len(m[i]) == 4:
+            # skip the case of adjacent junctions for now.
+            continue
+        assert(len(m[i]) == 2)
+        while True:
+            mm = list(m[i])
+            next_edge = mm[0] if mm[1] in visited_edges else mm[1]
+            visited_edges.add(next_edge)
+            i = next_edge[0] if next_edge[1] == i else next_edge[1]
+            if i == junction:
+                disjoint_set = visited_edges
+            if len(m[i]) == 4:
+                # just stop at junctions.
+                break
+        if disjoint_set is not None:
+            break
+    return disjoint_set
+
+def split_island(move):
+    """Attempts to split a touching set of edges into disjoint sets at 'junctions'."""
+    if len(move[0]) < 4:
+        # cannot split an island that is less than 4-opt.
+        return [move]
+    m = {}
+    map_edges(m, move[0])
+    map_edges(m, move[1])
+    splits = []
+    for i in m:
+        if len(m[i]) == 4:
+            split = test_junction(m, i)
+            if split is None:
+                continue
+            if len(split) % 2 == 0:
+                splits.append(split)
+    if not splits:
+        return [move]
+    move[0] = set(move[0])
+    move[1] = set(move[1])
+    moves = []
+    for split in splits:
+        new_move = [[], []]
+        for e in split:
+            if e in move[0]:
+                new_move[0].append(e)
+                move[0].remove(e)
+            else:
+                assert(e in move[1])
+                new_move[1].append(e)
+                move[1].remove(e)
+        moves.append(new_move)
+    move[0] = list(move[0])
+    move[1] = list(move[1])
+    moves.append(move)
+    return moves
 
 import sys
 import json
@@ -114,7 +182,11 @@ if __name__ == "__main__":
         if e not in first_edges:
             second_exclusive.add(e)
 
-    islands = split_difference(first_exclusive, second_exclusive)
+    presplit_islands = split_difference(first_exclusive, second_exclusive)
+    islands = []
+    for island in presplit_islands:
+        islands += split_island(island)
+
     print(f'split the total k-move into {len(islands)} disjoint k-moves.')
     print(f'k-opt for each island: {[len(x[0]) for x in islands]}')
 

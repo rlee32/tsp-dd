@@ -26,11 +26,15 @@ def plot_edges(instance, edges, linestyle):
     """instance is a list of coordinates read from TSPLIB-formatted file.
     edges is a list of 2-tuples representing edges. """
     for e in edges:
-        c0 = instance[e[0]]
-        c1 = instance[e[1]]
+        c0 = instance[e[0] - 1]
+        c1 = instance[e[1] - 1]
         plt.plot([c0[0], c1[0]], [c0[1], c1[1]], 'x' + linestyle)
 
 def distance(instance, i, j):
+    # i and j are index + 1.
+    i -= 1
+    j -= 1
+    assert(i >= 0 and j >= 0)
     dx = instance[i][0] - instance[j][0]
     dy = instance[i][1] - instance[j][1]
     return round((dx ** 2 + dy ** 2) ** 0.5)
@@ -65,9 +69,20 @@ if __name__ == "__main__":
     moves = read_moves(edge_path)
 
     colors = ColorSwatch()
+    total_cost = 0
+    total_k = 0
+    costs = []
     for edges in moves:
         c = colors.next()
         plot_edges(instance, edges[0], f'{c}-')
         plot_edges(instance, edges[1], f'{c}:')
-        print(f'k-count, cost: {len(edges[0])}, {edge_cost_sum(instance, edges[0]) - edge_cost_sum(instance, edges[1])}')
+        cost = edge_cost_sum(instance, edges[0]) - edge_cost_sum(instance, edges[1])
+        k = len(edges[0])
+        costs.append((cost, k))
+        total_cost += cost
+        total_k += k
+    costs.sort()
+    for c in costs:
+        print(f'cost, k-count: {c}')
+    print(f'\ntotal k, cost: {total_k}, {total_cost}')
     plt.show()
